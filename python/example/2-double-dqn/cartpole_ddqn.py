@@ -8,25 +8,29 @@ from keras.layers import Dense
 from keras.optimizers import Adam
 from keras.models import Sequential
 
-class DQNAgent:
-    def __init__(self, state_size, action_size,num_hidden_node):
+EPISODES = 300
+
+
+# Double DQN Agent for the Cartpole
+# it uses Neural Network to approximate q function
+# and replay memory & target q network
+class DoubleDQNAgent:
+    def __init__(self, state_size, action_size):
         # if you want to see Cartpole learning, then change to True
         self.render = False
         self.load_model = False
-
         # get size of state and action
         self.state_size = state_size
         self.action_size = action_size
-        self.num_hidden_node = num_hidden_node
 
-        # These are hyper parameters for the DQN
+        # these is hyper parameters for the Double DQN
         self.discount_factor = 0.99
         self.learning_rate = 0.001
         self.epsilon = 1.0
         self.epsilon_decay = 0.999
         self.epsilon_min = 0.01
-        self.batch_size = 3
-        self.train_start = 3
+        self.batch_size = 64
+        self.train_start = 1000
         # create replay memory using deque
         self.memory = deque(maxlen=2000)
 
@@ -38,7 +42,7 @@ class DQNAgent:
         self.update_target_model()
 
         if self.load_model:
-            self.model.load_weights("./save_model/cartpole_dqn.h5")
+            self.model.load_weights("./save_model/cartpole_ddqn.h5")
 
     # approximate Q function using Neural Network
     # state is input and Q Value of each action is output of network
@@ -60,11 +64,9 @@ class DQNAgent:
 
     # get action from model using epsilon-greedy policy
     def get_action(self, state):
-#        print(state)
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
         else:
-#            print("predict")
             q_value = self.model.predict(state)
             return np.argmax(q_value[0])
 
@@ -85,55 +87,89 @@ class DQNAgent:
         update_target = np.zeros((batch_size, self.state_size))
         action, reward, done = [], [], []
 
-        for i in range(self.batch_size):
+        for i in range(batch_size):
             update_input[i] = mini_batch[i][0]
             action.append(mini_batch[i][1])
             reward.append(mini_batch[i][2])
             update_target[i] = mini_batch[i][3]
             done.append(mini_batch[i][4])
 
-        # print(update_input)
         target = self.model.predict(update_input)
+        target_next = self.model.predict(update_target)
         target_val = self.target_model.predict(update_target)
 
         for i in range(self.batch_size):
-            # Q Learning: get maximum Q value at s' from target model
+            # like Q Learning, get maximum Q value at s'
+            # But from target model
             if done[i]:
                 target[i][action[i]] = reward[i]
             else:
+                # the key point of Double DQN
+                # selection of action is from model
+                # update is from target model
+                a = np.argmax(target_next[i])
                 target[i][action[i]] = reward[i] + self.discount_factor * (
-                    np.amax(target_val[i]))
+                    target_val[i][a])
 
+        # make minibatch which includes target q value and predicted q value
         # and do the model fit!
-        error = self.model.fit(update_input, target, batch_size=self.batch_size,
-                       epochs=10, verbose=0).history['loss']
+        self.model.fit(update_input, target, batch_size=self.batch_size,
+                       epochs=1, verbose=0)
 
 
-    def get_model(self):
-        dict_send = {}
-        dict_send['weights_all'] = []
-        dict_send['bias_all'] = []
-        dict_send['num_input'] = self.state_size
-        dict_send['num_output'] = self.action_size
-        dict_send['hidden'] = self.num_hidden_node
+if __name__ == "__main__":
+    # In case of CartPole-v1, you can play until 500 time step
+    env = gym.make('CartPole-v1')
+    # get size of state and action from environment
+    state_size = env.observation_space.shape[0]
+    action_size = env.action_space.n
 
-        for layer in self.model.layers:
-            dict_send['weights_all'].append(layer.get_weights()[0].tolist())
+    agent = DoubleDQNAgent(state_size, action_size)
 
-        for layer in self.model.layers:
-            dict_send['bias_all'].append(layer.get_weights()[1].tolist())
+    scores, episodes = [], []
 
-        return dict_send
+    for e in range(EPISODES):
+        done = False
+        score = 0
+        state = env.reset()
+        state = np.reshape(state, [1, state_size])
 
-    def run(self, data):
-        for i in data['mem']:
-            self.append_sample(i[0], i[1], i[2], i[3], i[4])
+        while not done:
+            if agent.render:
+                env.render()
 
-        # print(self.memory)
-        
-        self.train_model()
-        self.update_target_model()
+            # get action for the current state and go one step in environment
+            action = agent.get_action(state)
+            next_state, reward, done, info = env.step(action)
+            next_state = np.reshape(next_state, [1, state_size])
+            # if an action make the episode end, then gives penalty of -100
+#            reward = reward if not done or score == 499 else -100
 
+            # save the sample <s, a, r, s'> to the replay memory
+            agent.append_sample(state, action, reward, next_state, done)
+            # every time step do the training
+            agent.train_model()
+            score += reward
+            state = next_state
 
+            if done:
+                # every episode update the target model to be same with model
+                agent.update_target_model()
 
-  
+                # every episode, plot the play time
+                score = score if score == 500 else score + 100
+                scores.append(score)
+                episodes.append(e)
+                pylab.plot(episodes, scores, 'b')
+                pylab.savefig("./save_graph/cartpole_ddqn.png")
+                print("episode:", e, "  score:", score, "  memory length:",
+                      len(agent.memory), "  epsilon:", agent.epsilon)
+
+                # if the mean of scores of last 10 episode is bigger than 490
+                # stop training
+                if np.mean(scores[-min(10, len(scores)):]) > 490:
+                    sys.exit()
+
+        # save the model
+        if e % 50 == 0:
+            agent.model.save_weights("./save_model/cartpole_ddqn.h5")

@@ -30,7 +30,7 @@ function GameControl:InitialValue()
 end
 
 function GameControl:resetThing()
-    FindClearSpaceForUnit(GameControl.hero, GameControl.mid3RadianTower:GetAbsOrigin() + RandomVector( RandomFloat( 0, 200 )) , true)
+    FindClearSpaceForUnit(GameControl.hero, GameControl.mid2RadianTower:GetAbsOrigin() + RandomVector( RandomFloat( 0, 200 )) , true)
 end
 
 function GameControl:resetAll()

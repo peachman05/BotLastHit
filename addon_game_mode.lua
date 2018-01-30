@@ -44,16 +44,22 @@ end
 
 function CAddonTemplateGameMode:OnInitial()
 	GameControl:InitialValue()
-	GameRules:GetGameModeEntity():SetThink( "state_loop", self, 1)
 	ai_state = STATE_GETMODEL
+	check_done = false
+	check_send = false
+	all_reward = 0
+
+	GameRules:GetGameModeEntity():SetThink( "state_loop", self, 1)
+	
 	print("init")	
 end
 
 STATE_GETMODEL = 0
 STATE_SIMULATING = 1
 STATE_UPDATEMODEL = 2
-check_done = false
+
 baseURL = "http://localhost:5000"
+
 
 function CAddonTemplateGameMode:state_loop()
 	if ai_state == STATE_GETMODEL then
@@ -73,29 +79,36 @@ function CAddonTemplateGameMode:state_loop()
 							end
 						end )
 	elseif ai_state == STATE_SIMULATING then
-	
+		check_send = false
 	elseif ai_state == STATE_UPDATEMODEL then
-		data_send = {}
-		data_send['mem'] = dqn_agent.memory
-		print('update')
-		request = CreateHTTPRequestScriptVM( "POST", baseURL .. "/update")
-		request:SetHTTPRequestHeaderValue("Accept", "application/json")		
-		request:SetHTTPRequestRawPostBody('application/json', package.loaded['game/dkjson'].encode(data_send))
-		request:Send( 	function( result ) 
-							if result["StatusCode"] == 200 and ai_state == STATE_UPDATEMODEL then  
-								-- Say(hero, "Model Updated", false)
-								local data = package.loaded['game/dkjson'].decode(result['Body'])
-								dqn_agent.weight_array = data['weights_all']
-								dqn_agent.bias_array = data['bias_all']     
-								dqn_agent.memory = {}           
-								
-								GameControl:CreateCreep()
-								check_done = false
-								ai_state = STATE_SIMULATING
-								
-								
-							end
-						end )
+		if check_send == false then
+			check_send = true
+			data_send = {}
+			data_send['mem'] = dqn_agent.memory
+			data_send['all_reward'] = all_reward
+			print('update')
+			request = CreateHTTPRequestScriptVM( "POST", baseURL .. "/update")
+			request:SetHTTPRequestHeaderValue("Accept", "application/json")		
+			request:SetHTTPRequestRawPostBody('application/json', package.loaded['game/dkjson'].encode(data_send))
+			request:Send( 	function( result ) 
+								if result["StatusCode"] == 200 and ai_state == STATE_UPDATEMODEL then  
+									-- Say(hero, "Model Updated", false)
+									local data = package.loaded['game/dkjson'].decode(result['Body'])
+									dqn_agent.weight_array = data['weights_all']
+									dqn_agent.bias_array = data['bias_all']     
+									dqn_agent.memory = {}           
+									
+									GameControl:CreateCreep()
+									check_done = false
+									ai_state = STATE_SIMULATING							
+									check_send = false
+									all_reward = 0
+									
+									
+								end
+							end )
+		end
+		
 	else
 		Warning("Some shit has gone bad..")
 	end
@@ -111,8 +124,12 @@ function CAddonTemplateGameMode:bot_loop()
 
 	new_state = GameControl:getState()
 	if check_done then
+		if reward == 0 then
+			reward = -1
+		end
 		dqn_agent:remember({state,action,reward,new_state,true})
 		print("reward: "..reward)
+		all_reward = all_reward + reward
 		reward = 0		
 		GameControl:resetAll()
 		ai_state = STATE_UPDATEMODEL				
@@ -123,11 +140,11 @@ function CAddonTemplateGameMode:bot_loop()
 	state = new_state
 	------------------------
 	action = dqn_agent:act(state) - 1
-	if state[1] < 20 then
-		action = 1
-	end
+	-- if state[1] < 20 then
+	-- 	action = 1
+	-- end
 	GameControl:runAction(action)	
-	print(action)
+	-- print(action)
 
 	return 0.3
 
@@ -138,7 +155,7 @@ function CAddonTemplateGameMode:OnEntity_kill(event)
 	local killed = EntIndexToHScript(event.entindex_killed);
 	local attaker = EntIndexToHScript(event.entindex_attacker );
 	-- local damage = event.damagebits
-	print(killed:GetName())
+	-- print(killed:GetName())
 	if(killed:GetName() == "npc_dota_creep_lane" )then
 		if killed:GetTeam() == DOTA_TEAM_BADGUYS then
 			check_done = true

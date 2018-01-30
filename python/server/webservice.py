@@ -25,7 +25,7 @@ def get_model():
 def update():
     dqn_agent = test()
     # print(request.json['mem'])
-    print('update')
+    # print('update')
     dqn_agent.run(request.json)
 
     dqn_save = dqn_agent
