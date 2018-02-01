@@ -29,12 +29,14 @@ function GameControl:InitialValue()
 	GameControl:resetThing()
 end
 
-function GameControl:resetThing()
-    FindClearSpaceForUnit(GameControl.hero, GameControl.midRadianTower:GetAbsOrigin() + RandomVector( RandomFloat( 0, 200 )) , true)
+function GameControl:resetThing() 
+	FindClearSpaceForUnit(GameControl.hero, GameControl.midRadianTower:GetAbsOrigin() + Vector(-100,-100,0) , true)
+	--RandomVector( RandomFloat( 0, 200 ))
+	GameControl.midRadianTower:SetHealth( GameControl.midRadianTower:GetMaxHealth() )
+	GameControl.midDireTower:SetHealth( GameControl.midDireTower:GetMaxHealth() )
 end
 
 function GameControl:resetAll()
-	GameControl:resetThing()
 	GameControl:ForceKillCreep()
 end
 

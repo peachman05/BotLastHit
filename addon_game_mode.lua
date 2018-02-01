@@ -99,7 +99,11 @@ function CAddonTemplateGameMode:state_loop()
 									dqn_agent.bias_array = data['bias_all']     
 									dqn_agent.memory = {}           
 									
+									GameControl:ForceKillCreep()
 									GameControl:CreateCreep()
+									GameControl:resetThing()
+									
+
 									check_done = false
 									ai_state = STATE_SIMULATING							
 									check_send = false
@@ -132,7 +136,7 @@ function CAddonTemplateGameMode:bot_loop()
 		print("reward: "..reward)
 		all_reward = all_reward + reward
 		reward = 0		
-		GameControl:resetAll()
+		-- GameControl:resetAll()
 		ai_state = STATE_UPDATEMODEL				
 	else
 		dqn_agent:remember({state,action,reward,new_state,false})
