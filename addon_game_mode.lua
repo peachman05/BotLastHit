@@ -42,7 +42,8 @@ function CAddonTemplateGameMode:InitGameMode()
 
 end
 
-function CAddonTemplateGameMode:OnInitial()
+function CAddonTemplateGameMode:OnInitial()	
+	GameControl:ForceKillCreep()
 	GameControl:InitialValue()
 	ai_state = STATE_GETMODEL
 	check_done = false
@@ -105,9 +106,14 @@ function CAddonTemplateGameMode:state_loop()
 									
 
 									check_done = false
-									ai_state = STATE_SIMULATING							
+																
 									check_send = false
 									all_reward = 0
+									
+									GameRules:GetGameModeEntity():SetThink( "change_state", self, 2)
+
+
+									
 									
 									
 								end
@@ -122,12 +128,23 @@ function CAddonTemplateGameMode:state_loop()
 	return 3
 end
 
+function CAddonTemplateGameMode:change_state()
+	ai_state = STATE_SIMULATING
+	state = GameControl:getState()
+	print("finish update")
+end
+
+
 function CAddonTemplateGameMode:bot_loop()
+	-- print(ai_state)
 	if ai_state ~= STATE_SIMULATING then
 		return 0.2
 	end
 
-	new_state = GameControl:getState()
+	new_state =  GameControl:getState()
+	for key,value in pairs(new_state) do
+		print(key.." "..value)
+	end
 	if check_done then
 		if reward == 0 then
 			-- reward = -1
@@ -145,13 +162,18 @@ function CAddonTemplateGameMode:bot_loop()
 	state = new_state
 	------------------------
 	action = dqn_agent:act(state) - 1
-	-- if state[1] < 20 then
-	-- 	action = 1
-	-- end
-	GameControl:runAction(action)	
+
+	
+	if state[1] < 30 then
+		action = 1
+	end
+
+	-- print("before:"..GameRules:GetGameTime())
+	time_return = GameControl:runAction(action,state)	
+	-- print("after:"..GameRules:GetGameTime())
 	-- print(action)
 
-	return 0.3
+	return time_return
 
 end
 
@@ -163,11 +185,21 @@ function CAddonTemplateGameMode:OnEntity_kill(event)
 	-- print(killed:GetName())
 	if(killed:GetName() == "npc_dota_creep_lane" )then
 		if killed:GetTeam() == DOTA_TEAM_BADGUYS then
-			check_done = true
+			
 			if attaker:GetName() == GameControl.nameHero then
+				print("kill creep")
+				for key,value in pairs(state) do
+					print(key.." "..value)
+				end
+
+				for key,value in pairs(new_state) do
+					print(key.." "..value)
+				end
 				reward = 1
 			end
+			check_done = true
 		end		
 	end
 
 end
+

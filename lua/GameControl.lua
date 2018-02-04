@@ -86,16 +86,23 @@ function GameControl:ForceKillCreep(creeps)
 end
 
 
-function GameControl:runAction(action)
+function GameControl:runAction(action,state)
 	if CalcDistanceBetweenEntityOBB( GameControl.hero, GameControl.creeps_Dire[1]) < 500 then
 		if action == 0 then
 			GameControl.hero:Stop()
 			print('stop')
+			return 0.1
 		elseif action == 1 then
-			GameControl.hero:MoveToTargetToAttack(GameControl.creeps_Dire[1])
+			GameControl.hero:Stop()
+			if state[2] == 0 then
+				GameControl.hero:MoveToTargetToAttack(GameControl.creeps_Dire[1])
+			end
+			print('hit')
+			return 0.4
 		end
 	else
 		GameControl.hero:MoveToTargetToAttack(GameControl.midDireTower)
+		return 0.1
 	end
 end
 --[[
@@ -140,12 +147,16 @@ end
 --[[
         Agent Function
 --]] 
-function GameControl:getState(num_hero)
+function GameControl:getState()
 	local stateArray = {}
+	
+	print("getState")	
 	-- stateArray[1] = normalize(GameControl.creeps_Dire[1]:GetHealth(), 0, GameControl.creeps_Dire[1]:GetMaxHealth() )
 	-- stateArray[2] = normalize(GameControl.hero:TimeUntilNextAttack(), 0 ,GameControl.hero:GetBaseAttackTime() )
 	stateArray[1] = GameControl.creeps_Dire[1]:GetHealth()
-	stateArray[2] = GameControl.hero:TimeUntilNextAttack()
+	local temp = GameControl.hero:TimeUntilNextAttack()
+	print(type(temp))
+	stateArray[2] = math.ceil( temp*10 ) / 10
 	return stateArray
 end
 
@@ -153,8 +164,23 @@ end
         Other Function
 --]] 
 
+function GameControl:shallowcopy(orig)
+    local orig_type = type(orig)
+    local copy
+    if orig_type == 'table' then
+        copy = {}
+        for orig_key, orig_value in pairs(orig) do
+            copy[orig_key] = orig_value
+        end
+    else -- number, string, boolean, etc
+        copy = orig
+    end
+    return copy
+end
+
 function normalize(value, min, max)
 	return (value - min) / (max - min)
 end
 
 return GameControl
+

@@ -7,6 +7,9 @@ from collections import deque
 from keras.layers import Dense
 from keras.optimizers import Adam
 from keras.models import Sequential
+import csv
+
+
 
 class DQNAgent:
     def __init__(self, state_size, action_size,num_hidden_node):
@@ -45,8 +48,12 @@ class DQNAgent:
         # initialize target model
         self.update_target_model()
 
+        # CSV write
+        self.file = open("output.csv", "w")
+        self.writer = csv.writer(self.file)
+
         if self.load_model:
-            self.model.load_weights("./save_model/cartpole_dqn.h5")
+            self.model.load_weights("weight_save.h5")
 
     # approximate Q function using Neural Network
     # state is input and Q Value of each action is output of network
@@ -100,8 +107,8 @@ class DQNAgent:
             update_target[i] = mini_batch[i][3]
             done.append(mini_batch[i][4])
 
-        print("1:",update_input)
-        print("2:",update_target)
+        # print("1:",update_input)
+        # print("2:",update_target)
         target = self.model.predict(update_input)
         target_val = self.target_model.predict(update_target)
 
@@ -137,8 +144,16 @@ class DQNAgent:
         return dict_send
 
     def run(self, data):
-        for i in data['mem']:
+        data_train = data['mem'][32:]
+        print(data_train)
+        for i in data_train:
+            # print(type(i))
             self.append_sample(i[0], i[1], i[2], i[3], i[4])
+
+            # if self.episodeNumber % 50 == 0:
+            self.writer.writerow(i)
+            
+        self.file.flush()
 
         # print(self.memory)
         
@@ -162,9 +177,12 @@ class DQNAgent:
             pylab.subplot(212)
             pylab.plot(self.errorValue, 'b')
             # pylab.savefig("./save_graph/cartpole_dqn.png")
-
             
             pylab.savefig("./save_graph/image.png")
+
+        if self.episodeNumber % 50 == 0:
+            # self.file.flush()
+            self.model.save_weights("weight_save.h5")
 
 
 
