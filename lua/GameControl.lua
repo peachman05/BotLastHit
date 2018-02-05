@@ -90,15 +90,19 @@ function GameControl:runAction(action,state)
 	if CalcDistanceBetweenEntityOBB( GameControl.hero, GameControl.creeps_Dire[1]) < 500 then
 		if action == 0 then
 			GameControl.hero:Stop()
-			print('stop')
+			-- print('stop')
 			return 0.1
 		elseif action == 1 then
 			GameControl.hero:Stop()
 			if state[2] == 0 then
 				GameControl.hero:MoveToTargetToAttack(GameControl.creeps_Dire[1])
+				return 0.4
+			else
+				return 0.1
 			end
-			print('hit')
-			return 0.4
+			-- print('hit')
+			
+			
 		end
 	else
 		GameControl.hero:MoveToTargetToAttack(GameControl.midDireTower)
@@ -150,7 +154,7 @@ end
 function GameControl:getState()
 	local stateArray = {}
 	
-	print("getState")	
+	-- print("getState")	
 	-- stateArray[1] = normalize(GameControl.creeps_Dire[1]:GetHealth(), 0, GameControl.creeps_Dire[1]:GetMaxHealth() )
 	-- stateArray[2] = normalize(GameControl.hero:TimeUntilNextAttack(), 0 ,GameControl.hero:GetBaseAttackTime() )
 	stateArray[1] = GameControl.creeps_Dire[1]:GetHealth()

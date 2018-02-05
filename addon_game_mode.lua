@@ -50,6 +50,7 @@ function CAddonTemplateGameMode:OnInitial()
 	check_send = false
 	all_reward = 0
 	reward = 0
+	episode = 0
 	state = GameControl:getState()
 	GameRules:GetGameModeEntity():SetThink( "state_loop", self, 1)
 	
@@ -142,9 +143,9 @@ function CAddonTemplateGameMode:bot_loop()
 	end
 
 	new_state =  GameControl:getState()
-	for key,value in pairs(new_state) do
-		print(key.." "..value)
-	end
+	-- for key,value in pairs(new_state) do
+	-- 	print(key.." "..value)
+	-- end
 	if check_done then
 		if reward == 0 then
 			-- reward = -1
@@ -153,6 +154,7 @@ function CAddonTemplateGameMode:bot_loop()
 		print("reward: "..reward)
 		all_reward = all_reward + reward
 		reward = 0		
+		episode = episode + 1
 		-- GameControl:resetAll()
 		ai_state = STATE_UPDATEMODEL				
 	else
@@ -164,11 +166,11 @@ function CAddonTemplateGameMode:bot_loop()
 	action = dqn_agent:act(state) - 1
 
 	
-	if state[1] < 30 then
+	if episode % 10 == 0 and state[1] < 30 then
 		action = 1
 	end
 
-	-- print("before:"..GameRules:GetGameTime())
+	print("time:"..GameRules:GetGameTime())
 	time_return = GameControl:runAction(action,state)	
 	-- print("after:"..GameRules:GetGameTime())
 	-- print(action)

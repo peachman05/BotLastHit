@@ -51,9 +51,9 @@ function DQN.act(self, state)
 			-- table_print.loop_print(input_next_layer)
 		end
 
-		-- for key,value in pairs(output) do
-		-- 	print(key.." "..value)
-		-- end
+		for key,value in pairs(output) do
+			print(key.." "..value)
+		end
 
 		local output_cal = {}
 		local max_i = 1

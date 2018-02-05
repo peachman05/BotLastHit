@@ -145,15 +145,17 @@ class DQNAgent:
 
     def run(self, data):
         data_train = data['mem'][32:]
-        print(data_train)
+        # print(data_train)
         for i in data_train:
             # print(type(i))
             self.append_sample(i[0], i[1], i[2], i[3], i[4])
 
-            # if self.episodeNumber % 50 == 0:
+            # if self.episodeNumber % 10 == 0:
+                # print("in")
             self.writer.writerow(i)
+                # self.file.flush()
             
-        self.file.flush()
+        self.file.flush()self.file.flush()
 
         # print(self.memory)
         
@@ -180,8 +182,9 @@ class DQNAgent:
             
             pylab.savefig("./save_graph/image.png")
 
-        if self.episodeNumber % 50 == 0:
-            # self.file.flush()
+        if self.episodeNumber % 10 == 0:
+            print("write")
+            
             self.model.save_weights("weight_save.h5")
 
 

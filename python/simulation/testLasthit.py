@@ -8,6 +8,7 @@ from keras.layers import Dense
 from keras.optimizers import Adam
 from keras.models import Sequential
 import dqn_append as dq
+import csv
 #from random import randint
 
 
@@ -21,6 +22,8 @@ class DQNAgent:
         self.state_size = state_size
         self.action_size = action_size
 
+
+        
         # These are hyper parameters for the DQN
         self.discount_factor = 0.99
         self.learning_rate = 0.001
@@ -67,7 +70,9 @@ class DQNAgent:
             return random.randrange(self.action_size)
         else:
 #            print("predict")
+            
             q_value = self.model.predict(state)
+#            print(q_value[0])
             return np.argmax(q_value[0])
 
     # save sample <s,a,r,s'> to the replay memory
@@ -109,7 +114,7 @@ class DQNAgent:
         error = self.model.fit(update_input, target, batch_size=self.batch_size,
                        epochs=10, verbose=0).history['loss']
         
-        
+        return np.mean(error)
         
 class LasthitEnvironment:
     def __init__(self):
@@ -117,9 +122,9 @@ class LasthitEnvironment:
         self.state = 1 # hp enemy
         self.action = 2 #  idle , hit
         
-        self.current_state = 300
-        self.max_hit = 5
-        self.can_hit = self.max_hit;
+        self.current_state = 550
+        self.max_hit = 1.2
+        self.can_hit = 0
         self.can_hit_creep = [0,0,0,0]
         
     
@@ -128,19 +133,21 @@ class LasthitEnvironment:
         reward = 0 
         
         done = False
-#        print(action)
-        if self.can_hit >= self.max_hit  and action == 1 :
-            
-            if self.current_state <= 6 :
+        damage_hero = random.randint(15,21)
+        
+        if self.can_hit <= 0  and action == 1 :
+#            print("hero hit")
+            if self.current_state <= damage_hero :
                 self.current_state  = 0
                 reward = 1
                 done = True
             else:
-                self.current_state -= 6
+                self.current_state -= damage_hero
             
-            self.can_hit = 0
+            self.can_hit = 1.2
             
-        elif self.current_state <= 0:
+            
+        if self.current_state <= 0:
             done = True
 #            print("end")
         
@@ -148,33 +155,51 @@ class LasthitEnvironment:
         
         
         for i in range(4):
-            if self.can_hit_creep[i] > self.max_hit:                
-                self.current_state -= random.randint(3,5)
-                self.can_hit_creep[i] = 0
+            if self.can_hit_creep[i] <= 0: 
+#                print("creep",i,"hit")
+                damage_creep = random.randint(19,23)
+                self.current_state -= damage_creep
+                self.can_hit_creep[i] = self.max_hit
             else:
-                self.can_hit_creep[i] += 1
+                self.can_hit_creep[i] -= 0.1
        
-        self.can_hit += 1
+        self.can_hit -= 0.1
 #        print(self.current_state )
         
-        new_state = [self.current_state ,self.can_hit]
+        new_state = [self.current_state ,self.can_hit,self.can_hit_creep[0],
+                     self.can_hit_creep[1],self.can_hit_creep[2],
+                     self.can_hit_creep[3]]
         info = None
         return new_state, reward, done, info
         
     
 
     def reset(self):
-        self.current_state = 100
-        self.can_hit = self.max_hit;
+        self.current_state = 550
+        self.can_hit = 0
         
         for i in range(4):
-            self.can_hit_creep[i] = random.randint(0,self.can_hit)
+            self.can_hit_creep[i] = random.randint(0,self.max_hit*10)/10
         
-        return self.current_state, self.can_hit
+        return [self.current_state ,self.can_hit,self.can_hit_creep[0],
+                     self.can_hit_creep[1],self.can_hit_creep[2],
+                     self.can_hit_creep[3]]
         
         
-agent = DQNAgent(2, 2)
+agent = DQNAgent(6, 2)
 env = LasthitEnvironment()
+
+# for plot graph
+episodesMean = []
+scoreTemp = []
+scoresMean = []
+episodeNumber = 0
+errorValue = []
+
+# CSV write
+file = open("output.csv", "w")
+writer = csv.writer(file)
+
 
 for episode in range(10000):
     state = env.reset()
@@ -182,13 +207,18 @@ for episode in range(10000):
     
     rewardAll = 0
     for i in range(500):
+#        print("state:",state)
         action = agent.get_action(state)
+#        print("state:",state)
         new_state, reward, done, info = env.step(action) # take a random action
 #        print(agent.model.predict(state))
 #        print(episode,new_state)
         new_state = np.array([new_state])
         agent.append_sample(state, action, reward, new_state, done)
         
+        if episode % 10 == 0:
+            writer.writerow([state, action, reward, new_state, done])
+            
         rewardAll += reward
         
         state = new_state
@@ -196,11 +226,34 @@ for episode in range(10000):
         if done:
 #            agent.replay()
 #            agent.target_update()
+            error = agent.train_model()
             
-            agent.train_model()
             agent.update_target_model()
 #            agent.replay()
-            print("episode:", episode, "  score:", rewardAll," i:",i)
+#            print("episode:", episode, "  score:", rewardAll," i:",i)
+            
+            scoreTemp.append(rewardAll)             
+            errorValue.append(error)
+    
+            print("episode:",episode,"reward:",rewardAll,"error:",error)
+            
+            
+            if episode % 10 == 0:                
+                file.flush()
+                episodesMean.append(episode/10)
+                scoresMean.append( np.mean( scoreTemp ) )
+                scoreTemp = []
+#                print(scoresMean)
+                pylab.figure(1)
+                pylab.subplot(211)
+                pylab.plot(episodesMean, scoresMean, 'b')
+    
+                pylab.subplot(212)
+                pylab.plot(errorValue, 'b')
+                # pylab.savefig("./save_graph/cartpole_dqn.png")
+    
+                
+                pylab.savefig("./save_graph/image.png")
             
             break
         
