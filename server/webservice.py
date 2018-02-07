@@ -3,7 +3,7 @@ from DQN import DQNAgent
 
 app = Flask(__name__)
 
-num_state = 6
+num_state = 2
 num_action = 2
 num_hidden_node = [24,24]
 # m = 

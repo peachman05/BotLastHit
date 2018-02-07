@@ -53,6 +53,7 @@ class DQNAgent:
         self.writer = csv.writer(self.file)
 
         if self.load_model:
+            print("load model")
             self.model.load_weights("weight_save.h5")
 
     # approximate Q function using Neural Network

@@ -49,7 +49,7 @@ function CAddonTemplateGameMode:OnInitial()
 	check_done = false
 	check_send = false
 	all_reward = 0
-	reward = 0
+	reward = -1
 	episode = 0
 	state = GameControl:getState()
 	GameRules:GetGameModeEntity():SetThink( "state_loop", self, 1)
@@ -103,12 +103,10 @@ function CAddonTemplateGameMode:state_loop()
 									
 									GameControl:ForceKillCreep()
 									GameControl:CreateCreep()
-									GameControl:resetThing()
-									
+									GameControl:resetThing()									
 
-									check_done = false
-																
-									check_send = false
+									check_done = false																
+									
 									all_reward = 0
 									
 									GameRules:GetGameModeEntity():SetThink( "change_state", self, 2)
@@ -130,9 +128,11 @@ function CAddonTemplateGameMode:state_loop()
 end
 
 function CAddonTemplateGameMode:change_state()
-	ai_state = STATE_SIMULATING
 	state = GameControl:getState()
+	ai_state = STATE_SIMULATING	
+	check_send = false
 	print("finish update")
+	return nil
 end
 
 
@@ -147,18 +147,19 @@ function CAddonTemplateGameMode:bot_loop()
 	-- 	print(key.." "..value)
 	-- end
 	if check_done then
-		if reward == 0 then
-			-- reward = -1
-		end
+		-- if reward == 0 then
+		-- 	-- reward = -1
+		-- end
 		dqn_agent:remember({state,action,reward,new_state,true})
 		print("reward: "..reward)
-		all_reward = all_reward + reward
-		reward = 0		
+		all_reward = all_reward + reward + 38
+		reward = -1		
 		episode = episode + 1
 		-- GameControl:resetAll()
 		ai_state = STATE_UPDATEMODEL				
 	else
 		dqn_agent:remember({state,action,reward,new_state,false})
+		all_reward = all_reward + reward
 	end
 
 	state = new_state
@@ -174,7 +175,7 @@ function CAddonTemplateGameMode:bot_loop()
 	time_return = GameControl:runAction(action,state)	
 	-- print("after:"..GameRules:GetGameTime())
 	-- print(action)
-
+	print(all_reward)
 	return time_return
 
 end
@@ -197,7 +198,7 @@ function CAddonTemplateGameMode:OnEntity_kill(event)
 				for key,value in pairs(new_state) do
 					print(key.." "..value)
 				end
-				reward = 1
+				reward = 100
 			end
 			check_done = true
 		end		

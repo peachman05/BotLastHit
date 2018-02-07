@@ -157,14 +157,14 @@ function GameControl:getState()
 	-- print("getState")	
 	-- stateArray[1] = normalize(GameControl.creeps_Dire[1]:GetHealth(), 0, GameControl.creeps_Dire[1]:GetMaxHealth() )
 	-- stateArray[2] = normalize(GameControl.hero:TimeUntilNextAttack(), 0 ,GameControl.hero:GetBaseAttackTime() )
-	stateArray[1] = GameControl.creeps_Dire[1]:GetHealth()
-	local temp = GameControl.hero:TimeUntilNextAttack()
+	stateArray[1] = GameControl.creeps_Dire[1]:GetHealth() /550
+	local temp = GameControl.hero:TimeUntilNextAttack() 
 	print(type(temp))
-	stateArray[2] = math.ceil( temp*10 ) / 10
-	stateArray[3] = math.ceil( GameControl.creeps_Radian[1]:TimeUntilNextAttack()*10 ) / 10
-	stateArray[4] = math.ceil( GameControl.creeps_Radian[2]:TimeUntilNextAttack()*10 ) / 10
-	stateArray[5] = math.ceil( GameControl.creeps_Radian[3]:TimeUntilNextAttack()*10 ) / 10
-	stateArray[6] = math.ceil( GameControl.creeps_Radian[4]:TimeUntilNextAttack()*10 ) / 10
+	stateArray[2] = math.ceil( temp*10 ) / 10 
+	-- stateArray[3] = math.ceil( GameControl.creeps_Radian[1]:TimeUntilNextAttack()*10 ) / 10 
+	-- stateArray[4] = math.ceil( GameControl.creeps_Radian[2]:TimeUntilNextAttack()*10 ) / 10 
+	-- stateArray[5] = math.ceil( GameControl.creeps_Radian[3]:TimeUntilNextAttack()*10 ) / 10 
+	-- stateArray[6] = math.ceil( GameControl.creeps_Radian[4]:TimeUntilNextAttack()*10 ) / 10 
 	
 	return stateArray
 end
