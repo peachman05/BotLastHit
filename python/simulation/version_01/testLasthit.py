@@ -130,7 +130,7 @@ class LasthitEnvironment:
     
     def step(self, action):
         
-        reward = 0 
+        reward = -1 
         
         done = False
         damage_hero = random.randint(15,21)
@@ -139,7 +139,7 @@ class LasthitEnvironment:
 #            print("hero hit")
             if self.current_state <= damage_hero :
                 self.current_state  = 0
-                reward = 1
+                reward = 100
                 done = True
             else:
                 self.current_state -= damage_hero
@@ -147,12 +147,8 @@ class LasthitEnvironment:
             self.can_hit = 1.2
             
             
-        if self.current_state <= 0:
-            done = True
+
 #            print("end")
-        
-        
-        
         
         for i in range(4):
             if self.can_hit_creep[i] <= 0: 
@@ -164,9 +160,12 @@ class LasthitEnvironment:
                 self.can_hit_creep[i] -= 0.1
        
         self.can_hit -= 0.1
+        
+        if self.current_state <= 0:
+            done = True
 #        print(self.current_state )
         
-        new_state = [self.current_state ,self.can_hit,self.can_hit_creep[0],
+        new_state = [self.current_state/550,self.can_hit,self.can_hit_creep[0],
                      self.can_hit_creep[1],self.can_hit_creep[2],
                      self.can_hit_creep[3]]
         info = None
@@ -181,7 +180,7 @@ class LasthitEnvironment:
         for i in range(4):
             self.can_hit_creep[i] = random.randint(0,self.max_hit*10)/10
         
-        return [self.current_state ,self.can_hit,self.can_hit_creep[0],
+        return [self.current_state /550,self.can_hit,self.can_hit_creep[0],
                      self.can_hit_creep[1],self.can_hit_creep[2],
                      self.can_hit_creep[3]]
         
@@ -208,7 +207,11 @@ for episode in range(10000):
     rewardAll = 0
     for i in range(500):
 #        print("state:",state)
-        action = agent.get_action(state)
+#        action = agent.get_action(state)
+        action = 0
+#        print(state[0][0] * 550)
+        if state[0][0] * 550 < 25:
+            action = 1
 #        print("state:",state)
         new_state, reward, done, info = env.step(action) # take a random action
 #        print(agent.model.predict(state))
@@ -216,7 +219,7 @@ for episode in range(10000):
         new_state = np.array([new_state])
         agent.append_sample(state, action, reward, new_state, done)
         
-        if episode % 10 == 0:
+        if episode % 300 == 0:
             writer.writerow([state, action, reward, new_state, done])
             
         rewardAll += reward
@@ -244,6 +247,7 @@ for episode in range(10000):
                 scoresMean.append( np.mean( scoreTemp ) )
                 scoreTemp = []
 #                print(scoresMean)
+            if episode % 300 == 0:  
                 pylab.figure(1)
                 pylab.subplot(211)
                 pylab.plot(episodesMean, scoresMean, 'b')
