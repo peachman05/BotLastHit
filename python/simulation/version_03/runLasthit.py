@@ -33,7 +33,7 @@ file = open("output.csv", "w")
 writer = csv.writer(file)
 
 
-for episode in range(100000):
+for episode in range(1000000):
     state = env.reset()
     state = np.array([state])
     
@@ -69,7 +69,7 @@ for episode in range(100000):
 #          
                 scoreTemp = []
                 
-            if episode % 1000 == 0:
+            if episode % 3000 == 0:
                 pylab.plot(episodesMean,scoresMean, 'b')
                 pylab.savefig("./save_graph/image.png")
                 

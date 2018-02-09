@@ -5,16 +5,16 @@ import numpy as np
 from Q_Agent import Q_Agent
 
 
-state_size = 2
-action_size = 3
-env_low = [-1.2, -0.07]
-env_high = [0.6,  0.07]
-table_size = [20,20]
+state_size = 4
+action_size = 2
+env_low = [-2.4 , -900, -0.20943951, -900]
+env_high = [ 2.4, 900,  0.20943951, 900]
+table_size = [40,40,40,40]
 
 agent = Q_Agent(state_size, action_size,
                 env_low, env_high, table_size)
 
-env = gym.make('MountainCar-v0')
+env = gym.make('CartPole-v0')
 # for plot graph
 episodesMean = []
 scoreTemp = []
@@ -26,7 +26,7 @@ file = open("output.csv", "w")
 writer = csv.writer(file)
 
 
-for episode in range(50000):
+for episode in range(100000):
     state = env.reset()
 #    state = np.array([state])
     
