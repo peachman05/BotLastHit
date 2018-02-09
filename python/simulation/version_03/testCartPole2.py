@@ -5,16 +5,16 @@ import numpy as np
 from Q_Agent import Q_Agent
 
 
-state_size = 2
-action_size = 3
-env_low = [-1.2, -0.07]
-env_high = [0.6,  0.07]
-table_size = [20,20]
+state_size = 4
+action_size = 2
+env_low = [-2.4 , -2.3, -0.20943951, -3.4]
+env_high = [2.4 , 2.3, 0.20943951, 3.4]
+table_size = [1000,1000,1000,1000]
 
 agent = Q_Agent(state_size, action_size,
                 env_low, env_high, table_size)
 
-env = gym.make('MountainCar-v0')
+env = gym.make('CartPole-v0')
 # for plot graph
 episodesMean = []
 scoreTemp = []
@@ -25,17 +25,25 @@ episodeNumber = 0
 file = open("output.csv", "w")
 writer = csv.writer(file)
 
+max2 = 0
+max4 = 0
 
-for episode in range(50000):
+for episode in range(80000):
     state = env.reset()
 #    state = np.array([state])
     
     rewardAll = 0
     for i in range(500):
         action = agent.get_action(state)
+        
+#        if state[1] > max2:
+#            max2 = state[1]
+#            
+#        if state[3] > max4:
+#            max4 = state[3]
         new_state, reward, done, info = env.step(action) # take a random action
         
-        if reward == 0:
+        if reward == 0 and done:
             reward2 = -100
         else:
             reward2 = reward
@@ -74,3 +82,5 @@ for episode in range(50000):
                 pylab.savefig("./save_graph/image.png")
                 
             break
+
+print(max2,max4)
