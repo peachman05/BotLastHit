@@ -105,6 +105,6 @@ class DQNAgent:
 
         # and do the model fit!
         error = self.model.fit(update_input, target, batch_size=self.batch_size,
-                       epochs=10, verbose=0).history['loss']
+                       epochs=1, verbose=0).history['loss']
         
         return np.mean(error)

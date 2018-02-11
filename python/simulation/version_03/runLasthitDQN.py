@@ -11,8 +11,19 @@ import pylab
 import csv
 import numpy as np
 from DQNAgent import DQNAgent
+import tensorflow as tf
+import keras.backend.tensorflow_backend as ktf
 
-state_size = 2
+
+#def get_session(gpu_fraction=0.7):
+#    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=gpu_fraction,
+#                                allow_growth=True)
+#    return tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+#
+#
+#ktf.set_session(get_session())
+
+state_size = 6
 action_size = 2
 env_low = [0, 0]
 env_high = [1, 1.2]
@@ -33,7 +44,7 @@ file = open("output.csv", "w")
 writer = csv.writer(file)
 
 
-for episode in range(100000):
+for episode in range(1000000):
     state = env.reset()
     state = np.array([state])
     
@@ -44,6 +55,10 @@ for episode in range(100000):
         new_state, reward, done, info = env.step(action) # take a random action
         new_state = np.array([new_state])
         agent.append_sample(state, action, reward, new_state, done)
+        
+        if episode > 2000 and  done and reward == -1 :
+           writer.writerow([state.tolist(), action, reward, new_state.tolist(), done])
+           file.flush()
         
 #        if  episode % 1000 == 0:
 #            writer.writerow([state.tolist(), action, reward, new_state.tolist(), done])
@@ -64,7 +79,7 @@ for episode in range(100000):
             
             
             if episode % 100 == 0:                
-#                file.flush()
+                
                 episodesMean.append(episode/100)
                 scoresMean.append( np.sum( scoreTemp ) )
             
@@ -81,6 +96,6 @@ for episode in range(100000):
                 pylab.plot(errorValue, 'b')
                 pylab.savefig("./save_graph/image.png")
                 
-#                agent.model.save_weights("./testLasthit.h5")
+                agent.model.save_weights("./testLasthit.h5")
             
             break

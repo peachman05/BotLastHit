@@ -18,6 +18,17 @@ class LasthitEnvironment:
         done = False
         damage_hero = random.randint(15,21)
         
+        
+        for i in range(4):
+            if self.can_hit_creep[i] <= 0: 
+#                print("creep",i,"hit")
+                damage_creep = random.randint(19,23)
+                self.current_state -= damage_creep
+                self.can_hit_creep[i] += 1.2 
+            else:                
+                self.can_hit_creep[i] -= 0.1
+        
+        
         if self.can_hit <= 0  and action == 1 :
 #            print("hero hit")
             if self.current_state <= damage_hero :
@@ -30,26 +41,16 @@ class LasthitEnvironment:
             self.can_hit = 1.2
             
 
-        
-        for i in range(4):
-            if self.can_hit_creep[i] <= 0: 
-#                print("creep",i,"hit")
-                damage_creep = random.randint(19,23)
-                self.current_state -= damage_creep
-                self.can_hit_creep[i] = self.max_hit
-            else:
-                self.can_hit_creep[i] -= 0.1
-       
-        self.can_hit -= 0.1
+        self.can_hit = max(0, self.can_hit - 0.1)
         
         if self.current_state <= 0:
             done = True
 #        print(self.current_state )
         
-#        new_state = [self.current_state/550,self.can_hit,self.can_hit_creep[0],
-#                     self.can_hit_creep[1],self.can_hit_creep[2],
-#                     self.can_hit_creep[3]]
-        new_state = [self.current_state/550,self.can_hit]
+        new_state = [self.current_state/550,self.can_hit,self.can_hit_creep[0],
+                     self.can_hit_creep[1],self.can_hit_creep[2],
+                     self.can_hit_creep[3]]
+#        new_state = [self.current_state/550,self.can_hit]
         info = None
         return new_state, reward, done, info
         
@@ -60,9 +61,9 @@ class LasthitEnvironment:
         self.can_hit = 0
         
         for i in range(4):
-            self.can_hit_creep[i] = random.randint(0,self.max_hit*10)/10
+            self.can_hit_creep[i] = random.uniform(0, self.max_hit)
         
-#        return [self.current_state /550,self.can_hit,self.can_hit_creep[0],
-#                     self.can_hit_creep[1],self.can_hit_creep[2],
-#                     self.can_hit_creep[3]]
-        return [self.current_state /550,self.can_hit]
+        return [self.current_state /550,self.can_hit,self.can_hit_creep[0],
+                     self.can_hit_creep[1],self.can_hit_creep[2],
+                     self.can_hit_creep[3]]
+#        return [self.current_state /550,self.can_hit]
