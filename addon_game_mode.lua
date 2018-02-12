@@ -171,11 +171,11 @@ function CAddonTemplateGameMode:bot_loop()
 		action = 1
 	end
 
-	print("time:"..GameRules:GetGameTime())
+	-- print("time:"..GameRules:GetGameTime())
 	time_return = GameControl:runAction(action,state)	
 	-- print("after:"..GameRules:GetGameTime())
 	-- print(action)
-	print(all_reward)
+	-- print(all_reward)
 	return time_return
 
 end

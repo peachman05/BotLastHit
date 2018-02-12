@@ -1,39 +1,22 @@
-import sys
-import gym
-import pylab
 import random
 import numpy as np
 from collections import deque
 from keras.layers import Dense
 from keras.optimizers import Adam
 from keras.models import Sequential
-import tensorflow as tf
-import csv
-
-config = tf.ConfigProto()
-config.gpu_options.allow_growth = True
-session = tf.Session(config=config)
-
 
 class DQNAgent:
-    def __init__(self, state_size, action_size,num_hidden_node):
+    def __init__(self, state_size, action_size):
         # if you want to see Cartpole learning, then change to True
         self.render = False
-        self.load_model = True
-        
+        self.load_model = False
+
         # get size of state and action
         self.state_size = state_size
         self.action_size = action_size
-        self.num_hidden_node = num_hidden_node
 
-        # for plot graph
-        self.episodesMean = []
-        self.scoreTemp = []
-        self.scoresMean = []
-        self.episodeNumber = 0
 
-        self.errorValue = []
-
+        
         # These are hyper parameters for the DQN
         self.discount_factor = 0.99
         self.learning_rate = 0.001
@@ -49,19 +32,11 @@ class DQNAgent:
         self.model = self.build_model()
         self.target_model = self.build_model()
 
-
-        if self.load_model:
-            print("load model")
-            self.model.load_weights("weight_save.h5")
-
         # initialize target model
         self.update_target_model()
 
-        # CSV write
-        self.file = open("output.csv", "w")
-        self.writer = csv.writer(self.file)
-
-       
+        if self.load_model:
+            self.model.load_weights("./save_model/cartpole_dqn.h5")
 
     # approximate Q function using Neural Network
     # state is input and Q Value of each action is output of network
@@ -88,7 +63,9 @@ class DQNAgent:
             return random.randrange(self.action_size)
         else:
 #            print("predict")
+            
             q_value = self.model.predict(state)
+#            print(q_value[0])
             return np.argmax(q_value[0])
 
     # save sample <s,a,r,s'> to the replay memory
@@ -115,8 +92,6 @@ class DQNAgent:
             update_target[i] = mini_batch[i][3]
             done.append(mini_batch[i][4])
 
-        # print("1:",update_input)
-        # print("2:",update_target)
         target = self.model.predict(update_input)
         target_val = self.target_model.predict(update_target)
 
@@ -130,78 +105,6 @@ class DQNAgent:
 
         # and do the model fit!
         error = self.model.fit(update_input, target, batch_size=self.batch_size,
-                       epochs=10, verbose=0).history['loss']
-
-        return np.mean(error)
-
-
-    def get_model(self):
-        dict_send = {}
-        dict_send['weights_all'] = []
-        dict_send['bias_all'] = []
-        dict_send['num_input'] = self.state_size
-        dict_send['num_output'] = self.action_size
-        dict_send['hidden'] = self.num_hidden_node
-
-        for layer in self.model.layers:
-            dict_send['weights_all'].append(layer.get_weights()[0].tolist())
-
-        for layer in self.model.layers:
-            dict_send['bias_all'].append(layer.get_weights()[1].tolist())
-
-        return dict_send
-
-    def run(self, data):
-        data_train = data['mem'][32:]
-        # print(data_train)
-        for i in data_train:
-            # print(type(i))
-            self.append_sample(i[0], i[1], i[2], i[3], i[4])
-
-            # if self.episodeNumber % 10 == 0:
-                # print("in")
-            # self.writer.writerow(i)
-                # self.file.flush()
-            
-        # self.file.flush()
-
-        # print(self.memory)
+                       epochs=1, verbose=0).history['loss']
         
-        error = self.train_model()
-        self.update_target_model()
-
-        rewardAllTemp = 0
-        if data['all_reward'] > 0:
-            rewardAllTemp = 1
-
-        self.scoreTemp.append(rewardAllTemp)
-        self.errorValue.append(error)
-
-        print("episode:",self.episodeNumber,"reward:",data['all_reward'],"error:",error)
-        self.episodeNumber += 1
-
-        if self.episodeNumber % 10 == 0:
-            self.episodesMean.append(self.episodeNumber/10)
-            self.scoresMean.append( np.sum( self.scoreTemp ) )
-            self.scoreTemp = []
-
-        if self.episodeNumber % 50 == 0:
-            pylab.figure(1)
-            # pylab.subplot(211)
-            pylab.plot(self.episodesMean, self.scoresMean, 'b')
-
-            # pylab.subplot(212)
-            # pylab.plot(self.errorValue, 'b')
-            
-            pylab.savefig("./save_graph/image.png")
-
-        if self.episodeNumber % 50 == 0:
-            print("write")
-            
-            self.model.save_weights("weight_save.h5")
-
-
-
-
-
-  
+        return np.mean(error)
