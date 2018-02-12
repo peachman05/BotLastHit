@@ -9,7 +9,7 @@ class DQNAgent:
     def __init__(self, state_size, action_size):
         # if you want to see Cartpole learning, then change to True
         self.render = False
-        self.load_model = False
+        self.load_model = True
 
         # get size of state and action
         self.state_size = state_size
@@ -32,11 +32,13 @@ class DQNAgent:
         self.model = self.build_model()
         self.target_model = self.build_model()
 
+        if self.load_model:
+            self.model.load_weights("./testLasthit.h5")
+            
         # initialize target model
         self.update_target_model()
 
-        if self.load_model:
-            self.model.load_weights("./save_model/cartpole_dqn.h5")
+        
 
     # approximate Q function using Neural Network
     # state is input and Q Value of each action is output of network
@@ -105,6 +107,6 @@ class DQNAgent:
 
         # and do the model fit!
         error = self.model.fit(update_input, target, batch_size=self.batch_size,
-                       epochs=10, verbose=0).history['loss']
+                       epochs=1, verbose=0).history['loss']
         
         return np.mean(error)

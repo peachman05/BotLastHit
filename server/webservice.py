@@ -1,9 +1,12 @@
 from flask import Flask, jsonify, request
 from DQN import DQNAgent
+import os
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 app = Flask(__name__)
 
-num_state = 2
+num_state = 6
 num_action = 2
 num_hidden_node = [24,24]
 # m = 
