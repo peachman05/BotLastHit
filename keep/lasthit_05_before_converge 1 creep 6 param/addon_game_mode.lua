@@ -65,7 +65,6 @@ baseURL = "http://localhost:5000"
 
 
 function CAddonTemplateGameMode:state_loop()
-	timestate = 3
 	if ai_state == STATE_GETMODEL then
 		request = CreateHTTPRequestScriptVM( "GET", baseURL .. "/model")
 		request:Send( 	function( result ) 
@@ -119,14 +118,13 @@ function CAddonTemplateGameMode:state_loop()
 								end
 							end )
 		end
-		-- timestate = 10
 		
 	else
 		Warning("Some shit has gone bad..")
 	end
 	-- print(ai_state)
 	
-	return timestate
+	return 3
 end
 
 function CAddonTemplateGameMode:change_state()
@@ -202,21 +200,7 @@ function CAddonTemplateGameMode:OnEntity_kill(event)
 				end
 				reward = 100
 			end
-
-
-			local countCreepDieDire = 0
-			----------- Count die creep number
-			for i = 1, #GameControl.creeps_Dire do
-				if(GameControl.creeps_Dire[i]:IsNull() or GameControl.creeps_Dire[i]:IsAlive() == false )then
-					countCreepDieDire = countCreepDieDire + 1
-				end
-			end
-
-			------------- Reset the episode when all dire creep are die
-			if(countCreepDieDire == #GameControl.creeps_Dire)then
-				check_done = true
-			end
-			
+			check_done = true
 		end		
 	end
 
