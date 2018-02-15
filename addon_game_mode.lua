@@ -65,6 +65,7 @@ baseURL = "http://localhost:5000"
 
 
 function CAddonTemplateGameMode:state_loop()
+	timestate = 3
 	if ai_state == STATE_GETMODEL then
 		request = CreateHTTPRequestScriptVM( "GET", baseURL .. "/model")
 		request:Send( 	function( result ) 
@@ -118,13 +119,13 @@ function CAddonTemplateGameMode:state_loop()
 								end
 							end )
 		end
-		
+		-- timestate = 10
 	else
 		Warning("Some shit has gone bad..")
 	end
 	-- print(ai_state)
 	
-	return 3
+	return timestate
 end
 
 function CAddonTemplateGameMode:change_state()
@@ -152,7 +153,7 @@ function CAddonTemplateGameMode:bot_loop()
 		-- end
 		dqn_agent:remember({state,action,reward,new_state,true})
 		print("reward: "..reward)
-		all_reward = all_reward + reward + 38
+		all_reward = all_reward + reward
 		reward = -1		
 		episode = episode + 1
 		-- GameControl:resetAll()

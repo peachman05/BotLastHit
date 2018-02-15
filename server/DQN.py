@@ -7,12 +7,15 @@ from collections import deque
 from keras.layers import Dense
 from keras.optimizers import Adam
 from keras.models import Sequential
+import keras
 import tensorflow as tf
 import csv
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth = True
 session = tf.Session(config=config)
+
+
 
 
 class DQNAgent:
@@ -128,9 +131,11 @@ class DQNAgent:
                 target[i][action[i]] = reward[i] + self.discount_factor * (
                     np.amax(target_val[i]))
 
+
+        # tbCallBack = keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0, write_graph=True, write_images=True)
         # and do the model fit!
         error = self.model.fit(update_input, target, batch_size=self.batch_size,
-                       epochs=10, verbose=0).history['loss']
+                       epochs=10, verbose=0, ).history['loss']
 
         return np.mean(error)
 
@@ -181,14 +186,16 @@ class DQNAgent:
         self.episodeNumber += 1
 
         if self.episodeNumber % 10 == 0:
-            self.episodesMean.append(self.episodeNumber/10)
+            # self.episodesMean.append(self.episodeNumber/10)
+            # for i in range(10000):
             self.scoresMean.append( np.sum( self.scoreTemp ) )
             self.scoreTemp = []
 
         if self.episodeNumber % 50 == 0:
+            print("graph")
             pylab.figure(1)
             # pylab.subplot(211)
-            pylab.plot(self.episodesMean, self.scoresMean, 'b')
+            pylab.plot( self.scoresMean, 'b')
 
             # pylab.subplot(212)
             # pylab.plot(self.errorValue, 'b')

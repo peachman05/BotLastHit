@@ -4,6 +4,8 @@ from collections import deque
 from keras.layers import Dense
 from keras.optimizers import Adam
 from keras.models import Sequential
+import keras
+
 
 class DQNAgent:
     def __init__(self, state_size, action_size):
@@ -105,8 +107,11 @@ class DQNAgent:
                 target[i][action[i]] = reward[i] + self.discount_factor * (
                     np.amax(target_val[i]))
 
+
+        tbCallBack = keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0, write_graph=True, write_images=True)
+
         # and do the model fit!
         error = self.model.fit(update_input, target, batch_size=self.batch_size,
-                       epochs=1, verbose=0).history['loss']
+                       epochs=1, verbose=0, callbacks=[tbCallBack]).history['loss']
         
         return np.mean(error)
