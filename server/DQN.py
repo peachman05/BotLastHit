@@ -185,13 +185,13 @@ class DQNAgent:
         print("episode:",self.episodeNumber,"reward:",data['all_reward'],"error:",error)
         self.episodeNumber += 1
 
-        if self.episodeNumber % 10 == 0:
+        if self.episodeNumber % 50 == 0:
             # self.episodesMean.append(self.episodeNumber/10)
             # for i in range(10000):
             self.scoresMean.append( np.sum( self.scoreTemp ) )
             self.scoreTemp = []
 
-        if self.episodeNumber % 50 == 0:
+        if self.episodeNumber % 150 == 0:
             print("graph")
             pylab.figure(1)
             # pylab.subplot(211)
@@ -202,7 +202,7 @@ class DQNAgent:
             
             pylab.savefig("./save_graph/image.png")
 
-        if self.episodeNumber % 50 == 0:
+        if self.episodeNumber % 150 == 0:
             print("write")
             
             self.model.save_weights("weight_save.h5")
