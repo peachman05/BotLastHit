@@ -154,9 +154,14 @@ class DQNAgent:
     def run(self, data):
         data_train = data['mem'][32:]
         # print(data_train)
+        countCreep = 0
         for i in data_train:
             # print(type(i))
+            
             self.append_sample(i[0], i[1], i[2], i[3], i[4])
+
+            if i[2] == 100:
+                countCreep += 1
 
             # if self.episodeNumber % 10 == 0:
                 # print("in")
@@ -170,22 +175,22 @@ class DQNAgent:
         error = self.train_model()
         self.update_target_model()
 
-        rewardAllTemp = 0
-        if data['all_reward'] > 0:
-            rewardAllTemp = 1
-
+        # rewardAllTemp = 0
+        # if data['all_reward'] > 0:
+        #     rewardAllTemp = 1
+        rewardAllTemp = countCreep
         self.scoreTemp.append(rewardAllTemp)
         self.errorValue.append(error)
 
         print("episode:",self.episodeNumber,"reward:",data['all_reward'],"error:",error)
         self.episodeNumber += 1
 
-        if self.episodeNumber % 10 == 0:
-            self.episodesMean.append(self.episodeNumber/10)
+        if self.episodeNumber % 5 == 0:
+            self.episodesMean.append(self.episodeNumber/5)
             self.scoresMean.append( np.sum( self.scoreTemp ) )
             self.scoreTemp = []
 
-        if self.episodeNumber % 50 == 0:
+        if self.episodeNumber % 25 == 0:
             pylab.figure(1)
             # pylab.subplot(211)
             pylab.plot(self.episodesMean, self.scoresMean, 'b')
@@ -195,7 +200,7 @@ class DQNAgent:
             
             pylab.savefig("./save_graph/image.png")
 
-        if self.episodeNumber % 50 == 0:
+        if self.episodeNumber % 25 == 0:
             print("write")
             
             self.model.save_weights("weight_save.h5")

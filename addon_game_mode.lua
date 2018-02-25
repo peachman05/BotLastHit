@@ -7,7 +7,6 @@ if CAddonTemplateGameMode == nil then
 end
 
 function Precache( context )
-
 end
 
 -- Create the game mode when we activate
@@ -162,6 +161,7 @@ function CAddonTemplateGameMode:bot_loop()
 	else
 		dqn_agent:remember({state,action,reward,new_state,false})
 		all_reward = all_reward + reward
+		reward = -1
 	end
 
 	state = new_state
@@ -169,9 +169,9 @@ function CAddonTemplateGameMode:bot_loop()
 	action = dqn_agent:act(state) - 1
 
 	
-	if episode % 10 == 0 and state[1] < 30 then
-		action = 1
-	end
+	-- if episode % 10 == 0 and state[1] < 30 then
+	-- 	action = 1
+	-- end
 
 	-- print("time:"..GameRules:GetGameTime())
 	time_return = GameControl:runAction(action,state)	
