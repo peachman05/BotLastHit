@@ -162,6 +162,7 @@ function CAddonTemplateGameMode:bot_loop()
 	else
 		dqn_agent:remember({state,action,reward,new_state,false})
 		all_reward = all_reward + reward
+		reward = -1
 	end
 
 	state = new_state
