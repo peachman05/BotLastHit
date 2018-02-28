@@ -37,6 +37,12 @@ function DQN.act(self, state)
 	if( RandomFloat(0, 1) < self.epsilon )then
 		return RandomInt(1, self.num_output)
 	else
+
+		-- print("--***")
+		-- for key,value in pairs(state) do
+		-- 	print(key.." "..value)
+		-- end
+
 		local input_next_layer = state
 		for i = 1, (#self.weight_array - 1) do
 			FC_result = self:FC(input_next_layer, self.weight_array[i], self.bias_array[i] )
@@ -51,7 +57,7 @@ function DQN.act(self, state)
 			-- table_print.loop_print(input_next_layer)
 		end
 
-		-- for key,value in pairs(output) do
+		-- for key,value in pairs(state) do
 		-- 	print(key.." "..value)
 		-- end
 
@@ -93,6 +99,10 @@ function DQN.FC(self, x, W, b)
 	for j = 1, #b do
 		y[j] = 0
 		for i = 1, #x do
+			-- print("=-=-=-=")
+			-- print(y[j])
+			-- print(x[j])
+			-- print( W[i][j])
 			y[j] = y[j] + x[i] * W[i][j]
 		end
 		-- table_print.loop_print(b[j])
