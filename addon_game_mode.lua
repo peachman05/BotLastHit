@@ -7,7 +7,6 @@ if CAddonTemplateGameMode == nil then
 end
 
 function Precache( context )
-
 end
 
 -- Create the game mode when we activate
@@ -30,12 +29,15 @@ function CAddonTemplateGameMode:InitGameMode()
 
 	----------- Create Hero
 	GameRules:GetGameModeEntity():SetCustomGameForceHero(GameControl.nameHero)
+	CreateUnitByName( GameControl.nameHero ,  RandomVector( RandomFloat( 0, 200 ) ), true, nil, nil, DOTA_TEAM_BADGUYS )
+	
 
 	----------- Set control creep
 	SendToServerConsole( "dota_creeps_no_spawning  1" )
 	SendToServerConsole( "dota_all_vision 1" )
 
 	----------- Set Event Listener
+	ListenToGameEvent( "entity_hurt", Dynamic_Wrap( CAddonTemplateGameMode, 'OnEntity_hurt' ), self )
 	ListenToGameEvent( "entity_killed", Dynamic_Wrap( CAddonTemplateGameMode, 'OnEntity_kill' ), self )
 	ListenToGameEvent( "player_chat", Dynamic_Wrap( CAddonTemplateGameMode, 'OnInitial' ), self ) ---- when player chat the game will reset
 
@@ -51,7 +53,7 @@ function CAddonTemplateGameMode:OnInitial()
 	all_reward = 0
 	reward = -1
 	episode = 0
-	state = GameControl:getState()
+	creepRound = 1
 	GameRules:GetGameModeEntity():SetThink( "state_loop", self, 1)
 	
 	print("init")	
@@ -78,8 +80,10 @@ function CAddonTemplateGameMode:state_loop()
 								dqn_agent.bias_array = data['bias_all']
 								
 								ai_state = STATE_SIMULATING		
-								GameRules:GetGameModeEntity():SetThink( "bot_loop", self, 1)	
-
+								GameRules:GetGameModeEntity():SetThink( "bot_loop", self)	
+								GameRules:GetGameModeEntity():SetThink( "enemy_loop", self)
+								state = GameControl:getState()
+								-- GameRules:GetGameModeEntity():SetThink( "creep_loop", self, 2)
 							end
 						end )
 	elseif ai_state == STATE_SIMULATING then
@@ -102,17 +106,15 @@ function CAddonTemplateGameMode:state_loop()
 									dqn_agent.bias_array = data['bias_all']     
 									dqn_agent.memory = {}           
 									
-									GameControl:ForceKillCreep()
-									GameControl:CreateCreep()
-									GameControl:resetThing()									
+																	
 
 									check_done = false																
 									
 									all_reward = 0
 									
-									GameRules:GetGameModeEntity():SetThink( "change_state", self, 2)
-
-
+									GameRules:GetGameModeEntity():SetThink( "change_state", self )
+									GameRules:GetGameModeEntity():SetThink( "enemy_loop", self )									
+									-- GameRules:GetGameModeEntity():SetThink( "creep_loop", self, 2)
 									
 									
 									
@@ -120,6 +122,7 @@ function CAddonTemplateGameMode:state_loop()
 							end )
 		end
 		-- timestate = 10
+		
 	else
 		Warning("Some shit has gone bad..")
 	end
@@ -129,6 +132,11 @@ function CAddonTemplateGameMode:state_loop()
 end
 
 function CAddonTemplateGameMode:change_state()
+
+	GameControl:ForceKillCreep()
+	-- GameControl:CreateCreep()
+	GameControl:resetThing()	
+
 	state = GameControl:getState()
 	ai_state = STATE_SIMULATING	
 	check_send = false
@@ -147,6 +155,10 @@ function CAddonTemplateGameMode:bot_loop()
 	-- for key,value in pairs(new_state) do
 	-- 	print(key.." "..value)
 	-- end
+	if creepRound % 50 == 0 then
+		check_done = true
+	end
+
 	if check_done then
 		-- if reward == 0 then
 		-- 	-- reward = -1
@@ -157,10 +169,12 @@ function CAddonTemplateGameMode:bot_loop()
 		reward = -1		
 		episode = episode + 1
 		-- GameControl:resetAll()
-		ai_state = STATE_UPDATEMODEL				
+		ai_state = STATE_UPDATEMODEL
+	
 	else
 		dqn_agent:remember({state,action,reward,new_state,false})
 		all_reward = all_reward + reward
+		reward = -1
 	end
 
 	state = new_state
@@ -173,13 +187,37 @@ function CAddonTemplateGameMode:bot_loop()
 	-- end
 
 	-- print("time:"..GameRules:GetGameTime())
-	time_return = GameControl:runAction(action,state)	
+	time_return = GameControl:runAction(action,state)
+	
+	
 	-- print("after:"..GameRules:GetGameTime())
-	-- print(action)
+	print(action)
 	-- print(all_reward)
 	return time_return
 
 end
+
+enemy_retreat = false
+function CAddonTemplateGameMode:enemy_loop()
+	if enemy_retreat then
+		GameControl.enemyHero:MoveToNPC(GameControl.midDireTower)
+		enemy_retreat = false
+		-- print("retreat")
+		return 1
+	else
+		-- print("do")
+		return GameControl:EnemyRun()
+	end
+end
+
+
+function CAddonTemplateGameMode:creep_loop()
+	if ai_state == STATE_SIMULATING then
+		GameControl:CreateCreep()
+		return 30
+	end
+end
+
 
 
 function CAddonTemplateGameMode:OnEntity_kill(event)
@@ -192,18 +230,66 @@ function CAddonTemplateGameMode:OnEntity_kill(event)
 			
 			if attaker:GetName() == GameControl.nameHero then
 				print("kill creep")
-				for key,value in pairs(state) do
-					print(key.." "..value)
-				end
+				-- for key,value in pairs(state) do
+				-- 	print(key.." "..value)
+				-- end
 
-				for key,value in pairs(new_state) do
-					print(key.." "..value)
-				end
+				-- for key,value in pairs(new_state) do
+				-- 	print(key.." "..value)
+				-- end
 				reward = 100
 			end
-			check_done = true
-		end		
+		end
+
+		local countCreepDieDire = 0
+		----------- Count die creep number
+		for i = 1, #GameControl.creeps_Dire do
+			if(GameControl.creeps_Dire[i]:IsNull() or GameControl.creeps_Dire[i]:IsAlive() == false )then
+				countCreepDieDire = countCreepDieDire + 1
+			end
+		end
+
+		local countCreepDieRadian = 0
+		----------- Count die creep number
+		for i = 1, #GameControl.creeps_Radian do
+			if(GameControl.creeps_Radian[i]:IsNull() or GameControl.creeps_Radian[i]:IsAlive() == false )then
+				countCreepDieRadian = countCreepDieRadian + 1
+			end
+		end
+
+		------------- Reset the episode when all dire creep are die
+		if(countCreepDieDire == #GameControl.creeps_Dire and countCreepDieRadian == #GameControl.creeps_Radian )then
+			-- check_done = true
+			if check_done == false then
+				GameControl:CreateCreep()
+			end
+			print("creepRound :"..creepRound)
+			creepRound = creepRound + 1
+
+		end
+			
+	end
+
+	if(killed:GetName() == GameControl.nameHero )then
+		if killed:GetTeam() == DOTA_TEAM_GOODGUYS then
+			reward = -1000
+		else 
+			reward = 1000
+		end
+		check_done = true
 	end
 
 end
 
+function CAddonTemplateGameMode:OnEntity_hurt(event)
+
+	local killed = EntIndexToHScript(event.entindex_killed);
+	local attaker = EntIndexToHScript(event.entindex_attacker );
+	-- local damage = event.damagebits
+	-- print(killed:GetName())
+	if(killed == GameControl.enemyHero )then
+		enemy_retreat = true
+		-- print("retreat")
+	end
+
+end

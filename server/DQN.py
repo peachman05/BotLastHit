@@ -9,6 +9,7 @@ from keras.optimizers import Adam
 from keras.models import Sequential
 import keras
 import tensorflow as tf
+import keras.backend as K
 import csv
 
 config = tf.ConfigProto()
@@ -22,7 +23,7 @@ class DQNAgent:
     def __init__(self, state_size, action_size,num_hidden_node):
         # if you want to see Cartpole learning, then change to True
         self.render = False
-        self.load_model = True
+        self.load_model = False
         
         # get size of state and action
         self.state_size = state_size
@@ -48,14 +49,23 @@ class DQNAgent:
         # create replay memory using deque
         self.memory = deque(maxlen=2000)
 
+        # Session Setup & graph
+        self.sess = tf.Session(config=config)
+        from keras import backend as K
+        K.set_session(self.sess)
+        self.tf_graph = tf.get_default_graph()
+
+
         # create main model and target model
-        self.model = self.build_model()
-        self.target_model = self.build_model()
+        with self.tf_graph.as_default():
+            self.model = self.build_model()
+            self.target_model = self.build_model()
+            self.sess.run(tf.global_variables_initializer())
 
 
-        if self.load_model:
-            print("load model")
-            self.model.load_weights("weight_save.h5")
+            if self.load_model:
+                print("load model")
+                self.model.load_weights("weight_save.h5")
 
         # initialize target model
         self.update_target_model()
@@ -70,9 +80,9 @@ class DQNAgent:
     # state is input and Q Value of each action is output of network
     def build_model(self):
         model = Sequential()
-        model.add(Dense(24, input_dim=self.state_size, activation='relu',
+        model.add(Dense(90, input_dim=self.state_size, activation='relu',
                         kernel_initializer='he_uniform'))
-        model.add(Dense(24, activation='relu',
+        model.add(Dense(90, activation='relu',
                         kernel_initializer='he_uniform'))
         model.add(Dense(self.action_size, activation='linear',
                         kernel_initializer='he_uniform'))
@@ -120,8 +130,9 @@ class DQNAgent:
 
         # print("1:",update_input)
         # print("2:",update_target)
-        target = self.model.predict(update_input)
-        target_val = self.target_model.predict(update_target)
+        with self.tf_graph.as_default():
+            target = self.model.predict(update_input)
+            target_val = self.target_model.predict(update_target)
 
         for i in range(self.batch_size):
             # Q Learning: get maximum Q value at s' from target model
@@ -134,8 +145,9 @@ class DQNAgent:
 
         # tbCallBack = keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0, write_graph=True, write_images=True)
         # and do the model fit!
-        error = self.model.fit(update_input, target, batch_size=self.batch_size,
-                       epochs=10, verbose=0, ).history['loss']
+        with self.tf_graph.as_default():
+            error = self.model.fit(update_input, target, batch_size=self.batch_size,
+                        epochs=10, verbose=0).history['loss']
 
         return np.mean(error)
 
