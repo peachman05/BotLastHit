@@ -5,6 +5,9 @@ GameControl.nameHero = "npc_dota_hero_sniper"
 
 GameControl.number_creep = 1
 
+GameControl.TEAM_RADIAN = 0
+GameControl.TEAM_DIRE = 1
+
 function GameControl:InitialValue()
 
 	--------- get tower
@@ -135,6 +138,28 @@ function GameControl:getCreepTarget(target, group_creep_attack)
 	return result_group
 end
 
+function GameControl:findAttacked(targetObject)
+	local allObj = {}
+	if targetObject:GetTeam() == DOTA_TEAM_BADGUYS then -- set target
+		allObj = { GameControl.creeps_Radian, {GameControl.hero} , { GameControl.midRadianTower }  }
+	else
+		allObj = { GameControl.creeps_Radian, {GameControl.enemyhero} , { GameControl.midRadianTower }  }
+	end
+
+	local results = {}
+	local count = 1
+	for i = 1,#allObj do
+		for j = 1,#allObj[i] do
+			if allObj[i][j]:GetAttackTarget() == targetObject then
+				results[count] = allObj[i][j]
+				count = count + 1
+			end
+		end
+	end
+
+	return results
+end
+
 
 --[[
         Run Function
@@ -176,7 +201,7 @@ end
 --[[
         Agent Function
 --]] 
-function GameControl:getState()
+function GameControl:getState(team)
 	local stateArray = {}
 
 	-- stateArray[1] = GameControl.creeps_Dire[1]:GetHealth() /550
@@ -188,21 +213,32 @@ function GameControl:getState()
 	
 	local minHp_creep_dire, minHp_dire = GameControl:getMinHpCreep(GameControl.creeps_Dire)
 	local minHp_creep_radian, minHp_radian = GameControl:getMinHpCreep(GameControl.creeps_Radian)
-	local heroPosition = GameControl.hero:GetAbsOrigin()
+	local heroPosition = nil 
+	local tableObj = {}
 	
-	local tableCreep = { minHp_creep_radian, minHp_creep_dire ,
-						 GameControl.midRadianTower , GameControl.midDireTower  ,
-						 GameControl.enemyHero, GameControl.hero}
+	if team == GameControl.TEAM_RADIAN then
+		
+		heroPosition = GameControl.hero:GetAbsOrigin()
+		tableObj = { minHp_creep_radian, minHp_creep_dire ,
+							GameControl.midRadianTower , GameControl.midDireTower  ,
+							GameControl.enemyHero, GameControl.hero}
+	else
 
-	for i=1,#tableCreep do
-		local creep = tableCreep[i]
-		if creep ~= nil then
-			local objPosition = creep:GetAbsOrigin()
-			stateArray[ (i-1)*5 + 1] = objPosition.x - heroPosition.x
-			stateArray[ (i-1)*5 + 2] = objPosition.y - heroPosition.y
-			stateArray[ (i-1)*5 + 3] = creep:TimeUntilNextAttack()
+		heroPosition = GameControl.enemyHero:GetAbsOrigin()
+		tableObj = { minHp_creep_dire, minHp_creep_radian ,
+							GameControl.midDireTower , GameControl.midRadianTower  ,
+							GameControl.hero, GameControl.enemyHero}
+	end
+
+	for i=1,#tableObj do
+		local obj = tableObj[i]
+		if obj ~= nil then
+			local objPosition = obj:GetAbsOrigin()
+			stateArray[ (i-1)*5 + 1] = (objPosition.x - heroPosition.x)/3000
+			stateArray[ (i-1)*5 + 2] = (objPosition.y - heroPosition.y)/3000
+			stateArray[ (i-1)*5 + 3] = obj:TimeUntilNextAttack()
 			-- print(creep:GetName())
-			local attackedTarget = creep:GetAttackTarget()
+			local attackedTarget = obj:GetAttackTarget()
 			if attackedTarget ~= nil then
 				local attackedName = attackedTarget:GetName()
 				if attackedName == GameControl.nameHero then
@@ -216,7 +252,7 @@ function GameControl:getState()
 				stateArray[ (i-1)*5 + 4] = 1
 			end
 
-			stateArray[ (i-1)*5 + 5] = creep:GetHealth() / creep:GetMaxHealth() 
+			stateArray[ (i-1)*5 + 5] = obj:GetHealth() / obj:GetMaxHealth() 
 		else
 			stateArray[ (i-1)*5 + 1] = -1
 			stateArray[ (i-1)*5 + 2] = -1
@@ -227,9 +263,13 @@ function GameControl:getState()
 
 	end
 
-	stateArray[26] = heroPosition.x
-	stateArray[27] = heroPosition.y
+	stateArray[26] = heroPosition.x/3000
+	stateArray[27] = heroPosition.y/3000
+
+	stateArray[31] = team
 	
+
+
 
 	-- for key,value in pairs(stateArray) do
 	-- 	print(key,value)
@@ -243,34 +283,64 @@ function GameControl:getState()
 end
 
 --[[
-        Enemy Function
+        run bot  Function
 --]] 
+
+function GameControl:hero_force_think()
+	local minHp_creep, minHp = GameControl:getMinHpCreep(GameControl.creeps_Radian)
+	local minHp_creep_dire, minHp_dire = GameControl:getMinHpCreep(GameControl.creeps_Dire)
+	if CalcDistanceBetweenEntityOBB( GameControl.hero, minHp_creep) < 500 then
+		if minHp < GameControl.enemyHero:GetAttackDamage() then
+			return 1  -- lasthit
+		elseif GameControl.enemyHero:GetHealth() < GameControl.hero:GetAttackDamage() then
+			return 2 -- hit hero
+		elseif GameControl.enemyHero:GetAttackTarget() == GameControl.hero then
+			return 2 -- hit hero
+		else
+			return 0 -- idle
+		end
+	else
+		return 3 -- forward
+	end
+end
 
 function GameControl:EnemyRun()
 	local minHp_creep, minHp = GameControl:getMinHpCreep(GameControl.creeps_Radian)
 	local minHp_creep_dire, minHp_dire = GameControl:getMinHpCreep(GameControl.creeps_Dire)
 	returntime = 0.1
-	if CalcDistanceBetweenEntityOBB( GameControl.enemyHero, minHp_creep_dire) < 500 then
-		prob = math.random()
-		if minHp < GameControl.enemyHero:GetAttackDamage() then
-			GameControl.enemyHero:MoveToTargetToAttack(minHp_creep)
-		elseif CalcDistanceBetweenEntityOBB( GameControl.hero, GameControl.enemyHero) < 500 then
-			GameControl.enemyHero:MoveToTargetToAttack(GameControl.hero)
-		elseif prob < 0.2 then
-			GameControl.enemyHero:MoveToPosition(GameControl.hero:GetAbsOrigin())
-			returntime = 0.4
-		-- elseif prob >= 0.2 and prob < 0.6 then
-		-- 	GameControl.enemyHero:MoveToTargetToAttack(minHp_creep)
-		-- 	returntime = 0.3
-		else
-			GameControl.enemyHero:MoveToPosition(GameControl.enemyHero:GetAbsOrigin()+RandomVector(1000))
-			returntime = 0.4
-		end
-	else
-		GameControl.enemyHero:MoveToTargetToAttack(GameControl.midRadianTower)
+	prob = math.random()
+
+	local objectAttack = GameControl:findAttacked(GameControl.enemyHero,false)
+	if #objectAttack > 0 then
+		-- retreat
+		print("-- retreat--")
+		GameControl.enemyHero:MoveToNPC(GameControl.midDireTower)
+		returntime = 0.1
+
+	elseif CalcDistanceBetweenEntityOBB( GameControl.enemyHero, minHp_creep_dire) > 500 then -- go to creep
+		GameControl.enemyHero:MoveToPosition(minHp_creep_dire:GetAbsOrigin())
+
+	elseif minHp < GameControl.enemyHero:GetAttackDamage() then  --- lastcreep
+		GameControl.enemyHero:MoveToTargetToAttack(minHp_creep)
+		
+	elseif CalcDistanceBetweenEntityOBB( GameControl.hero, GameControl.enemyHero) < 500 and CalcDistanceBetweenEntityOBB( GameControl.enemyHero, GameControl.midRadianTower) > 500 then -- hit hero
+		GameControl.enemyHero:MoveToTargetToAttack(GameControl.hero)
+
+	elseif prob < 0.2 and CalcDistanceBetweenEntityOBB( GameControl.hero, minHp_creep) < 800 then -- move to enemy hero
+		GameControl.enemyHero:MoveToPosition(GameControl.hero:GetAbsOrigin())
+		returntime = 0.4
+
+	elseif prob >= 0.2 and prob < 0.6 then -- attack min hp creep
+		GameControl.enemyHero:MoveToTargetToAttack(minHp_creep)
+		returntime = 0.3
+
+	else --- walk random 
+		GameControl.enemyHero:MoveToPosition(GameControl.enemyHero:GetAbsOrigin()+RandomVector(1000))
+		returntime = 0.3
+
 	end
 
-	return 0.1
+	return returntime
 	-- print("---")
 
 end 

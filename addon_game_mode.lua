@@ -134,7 +134,7 @@ end
 function CAddonTemplateGameMode:change_state()
 
 	GameControl:ForceKillCreep()
-	-- GameControl:CreateCreep()
+	GameControl:CreateCreep()
 	GameControl:resetThing()	
 
 	state = GameControl:getState()
@@ -179,7 +179,12 @@ function CAddonTemplateGameMode:bot_loop()
 
 	state = new_state
 	------------------------
-	action = dqn_agent:act(state) - 1
+	if creepRound % 10 == 0 then  --- force learning
+		
+		action = GameControl:hero_force_think()
+	else
+		action = dqn_agent:act(state) - 1
+	end
 
 	
 	-- if episode % 10 == 0 and state[1] < 30 then
@@ -191,7 +196,7 @@ function CAddonTemplateGameMode:bot_loop()
 	
 	
 	-- print("after:"..GameRules:GetGameTime())
-	print(action)
+	-- print(action)
 	-- print(all_reward)
 	return time_return
 
@@ -199,15 +204,15 @@ end
 
 enemy_retreat = false
 function CAddonTemplateGameMode:enemy_loop()
-	if enemy_retreat then
-		GameControl.enemyHero:MoveToNPC(GameControl.midDireTower)
-		enemy_retreat = false
-		-- print("retreat")
-		return 1
-	else
-		-- print("do")
-		return GameControl:EnemyRun()
-	end
+	-- if enemy_retreat then
+	-- 	GameControl.enemyHero:MoveToNPC(GameControl.midDireTower)
+	-- 	enemy_retreat = false
+	-- 	-- print("retreat")
+	-- 	return 1
+	-- else
+	-- 	-- print("do")
+	return GameControl:EnemyRun()
+	
 end
 
 
@@ -264,6 +269,7 @@ function CAddonTemplateGameMode:OnEntity_kill(event)
 				GameControl:CreateCreep()
 			end
 			print("creepRound :"..creepRound)
+			print("force think")
 			creepRound = creepRound + 1
 
 		end
@@ -288,7 +294,7 @@ function CAddonTemplateGameMode:OnEntity_hurt(event)
 	-- local damage = event.damagebits
 	-- print(killed:GetName())
 	if(killed == GameControl.enemyHero )then
-		enemy_retreat = true
+		-- enemy_retreat = true
 		-- print("retreat")
 	end
 

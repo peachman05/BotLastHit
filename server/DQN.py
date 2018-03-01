@@ -23,7 +23,7 @@ class DQNAgent:
     def __init__(self, state_size, action_size,num_hidden_node):
         # if you want to see Cartpole learning, then change to True
         self.render = False
-        self.load_model = False
+        self.load_model = True
         
         # get size of state and action
         self.state_size = state_size
@@ -187,37 +187,45 @@ class DQNAgent:
         error = self.train_model()
         self.update_target_model()
 
-        rewardAllTemp = 0
-        if data['all_reward'] > 0:
-            rewardAllTemp = 1
+        # rewardAllTemp = 0
+        # if data['all_reward'] > 0:
+        #     rewardAllTemp = 1
 
-        self.scoreTemp.append(rewardAllTemp)
-        self.errorValue.append(error)
+        # self.scoreTemp.append(rewardAllTemp)
+        self.scoreTemp.append(data['all_reward']) 
+        # self.errorValue.append(error)
 
         print("episode:",self.episodeNumber,"reward:",data['all_reward'],"error:",error)
         self.episodeNumber += 1
 
-        if self.episodeNumber % 50 == 0:
-            # self.episodesMean.append(self.episodeNumber/10)
-            # for i in range(10000):
-            self.scoresMean.append( np.sum( self.scoreTemp ) )
-            self.scoreTemp = []
+        # if self.episodeNumber % 50 == 0:
+        #     # self.episodesMean.append(self.episodeNumber/10)
+        #     # for i in range(10000):
+        #     self.scoresMean.append( np.sum( self.scoreTemp ) )
+        #     self.scoreTemp = []
 
-        if self.episodeNumber % 150 == 0:
-            print("graph")
-            pylab.figure(1)
-            # pylab.subplot(211)
-            pylab.plot( self.scoresMean, 'b')
+        # if self.episodeNumber % 150 == 0:
+        #     print("graph")
+        #     pylab.figure(1)
+        #     # pylab.subplot(211)
+        #     pylab.plot( self.scoresMean, 'b')
 
-            # pylab.subplot(212)
-            # pylab.plot(self.errorValue, 'b')
+        #     # pylab.subplot(212)
+        #     # pylab.plot(self.errorValue, 'b')
             
-            pylab.savefig("./save_graph/image.png")
+        #     pylab.savefig("./save_graph/image.png")
 
-        if self.episodeNumber % 150 == 0:
-            print("write")
+       
+        pylab.figure(1)
+        pylab.plot( self.scoreTemp, 'b')
+        pylab.savefig("./save_graph/image.png")
+
+        print("write")
+        self.model.save_weights("weight_save.h5")
+        # if self.episodeNumber % 150 == 0:
+        #     print("write")
             
-            self.model.save_weights("weight_save.h5")
+        #     self.model.save_weights("weight_save.h5")
 
 
 
